@@ -32,6 +32,7 @@ public class AllRouter {
                         // 创建用户
                         .andRoute(POST("/").and(accept(APPLICATION_JSON_UTF8)), userHandler::create)
                         // 删除用户
-                        .andRoute(DELETE("/{id}"), userHandler::delete));
+                        .andRoute(DELETE("/{id}"), userHandler::delete)
+                        .andRoute(PUT("/{id}"), userHandler::update));
     }
 }

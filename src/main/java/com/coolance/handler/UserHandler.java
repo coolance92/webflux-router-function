@@ -2,6 +2,8 @@ package com.coolance.handler;
 
 import com.coolance.domain.User;
 import com.coolance.repository.UserRepository;
+import com.coolance.util.CheckUtil;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
@@ -45,8 +47,12 @@ public class UserHandler {
      */
     public Mono<ServerResponse> create(ServerRequest serverRequest) {
         Mono<User> userMono = serverRequest.bodyToMono(User.class);
-        return ok().contentType(APPLICATION_JSON_UTF8)
-                .body(userRepository.saveAll(userMono), User.class);
+
+        return userMono.flatMap(user -> {
+            CheckUtil.checkName(user.getName());
+            return ok().contentType(APPLICATION_JSON_UTF8)
+                    .body(userRepository.save(user), User.class);
+        });
     }
 
     /**
@@ -62,5 +68,28 @@ public class UserHandler {
                 .flatMap(user -> userRepository.delete(user)
                         .then(ok().build()))
                 .switchIfEmpty(notFound().build());
+    }
+
+    /**
+     * 更新用户
+     *
+     * @param serverRequest
+     * @return
+     */
+    public Mono<ServerResponse> update(ServerRequest serverRequest) {
+        String id = serverRequest.pathVariable("id");
+        Mono<User> userMono = serverRequest.bodyToMono(User.class);
+
+        return userMono.flatMap(user -> {
+                    CheckUtil.checkName(user.getName());
+                    return userRepository.findById(id)
+                            .flatMap(u -> {
+                                u.setName(user.getName());
+                                u.setAge(user.getAge());
+                                return ok().contentType(APPLICATION_JSON_UTF8)
+                                        .body(userRepository.save(u), User.class);
+                            }).switchIfEmpty(notFound().build());
+                }
+        );
     }
 }
